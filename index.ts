@@ -1,58 +1,27 @@
-import mqtt from 'mqtt';
-import dotenv from 'dotenv';
+import express, { Request, Response } from "express";
+import { gasLevel } from "./app";
+import cors from "cors";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const brokerUrl = process.env.BROKE_URL || '';
+const main = async () => {
+  try {
+    const app = express();
+    app.use(cors());
+    const port =  5000;
 
-// MQTT connection options
-const options = {
-    clientId: 'mqtt_js_consumer',
-    username: process.env.USER_NAME,
-    password: process.env.PASSWORD,
-    keepalive: 60, // Keepalive interval in seconds
-    reconnectPeriod: 1000, // Reconnect period in milliseconds
+    app.get("/api/gas-level", (req: Request, res: Response) => {
+      res.json({ gas_level: gasLevel });
+    });
 
-  };
-
-const client = mqtt.connect(brokerUrl, options);
-
-client.on('connect', () => {
-  console.log('Connected to MQTT broker');
-
-  const topic = process.env.TOPIC || '';
-
-  client.subscribe(topic, { qos: 0 }, (error) => {
-    if (error) {
-      console.error('Subscription error:', error);
-    } else {
-      console.log(`Subscribed to topic '${topic}'`);
-    }
-  });
-});
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (error) {
+    if (error instanceof Error) console.log(error.message);
+  }
+};
 
 
-client.on('message', (topic, message) => {
-  console.log(`Message received on topic '${topic}': ${message.toString()}`);
-});
-
-client.on('error', (error) => {
-  console.error('Connection error:', error);
-});
-
-client.on('close', () => {
-  console.log('Connection closed');
-});
-
-client.on('reconnect', () => {
-  console.log('Attempting to reconnect to MQTT broker');
-});
-
-client.on('offline', () => {
-  console.log('Disconnected from MQTT broker');
-});
-
-process.on('SIGINT', () => {
-  client.end();
-  console.log('Disconnected due to SIGINT');
-});
+main();
