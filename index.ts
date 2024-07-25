@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { gasLevel } from "./app";
+import { getSensorData } from "./app"; // Asegúrate de que la ruta sea correcta
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -9,10 +9,13 @@ const main = async () => {
   try {
     const app = express();
     app.use(cors());
-    const port =  5000;
+    const port = 5000;
 
     app.get("/api/gas-level", (req: Request, res: Response) => {
-      res.json({ gas_level: gasLevel });
+      res.json({ 
+        gas_level: getSensorData().gas_level,
+        temperature: getSensorData().temperature
+       });
     });
 
     app.listen(port, () => {
@@ -22,6 +25,5 @@ const main = async () => {
     if (error instanceof Error) console.log(error.message);
   }
 };
-
 
 main();

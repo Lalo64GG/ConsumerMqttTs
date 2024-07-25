@@ -1,26 +1,27 @@
 import mqtt from 'mqtt';
 
+const brokerUrl = "mqtt://52.72.139.152";
 
-const brokerUrl = "mqtt://52.72.139.152" || '';
-
-// MQTT connection options
 const options: mqtt.IClientOptions = {
   clientId: 'mqtt_ts_consumer',
   username: "raspberry",
   password: "dine123",
-  keepalive: 60, // Keepalive interval in seconds
-  reconnectPeriod: 1000, // Reconnect period in milliseconds
+  keepalive: 60,
+  reconnectPeriod: 1000,
 };
 
 const client = mqtt.connect(brokerUrl, options);
 
-let gasLevel: number | null = null;
+interface SensorData {
+  gas_level?: number;
+  temperature?: number;
+}
+
+let sensorData: SensorData = {};
 
 client.on('connect', () => {
   console.log('Connected to MQTT broker');
-
-  const topic = "pable" || '';
-
+  const topic = "pable";
   client.subscribe(topic, { qos: 0 }, (error) => {
     if (error) {
       console.error('Subscription error:', error);
@@ -32,9 +33,15 @@ client.on('connect', () => {
 
 client.on('message', (topic, message) => {
   console.log(`Message received on topic '${topic}': ${message.toString()}`);
-  // Assuming message is a JSON string with a gas_level field
-  const data = JSON.parse(message.toString());
-  gasLevel = data.gas_level;
+  try {
+    const data: SensorData = JSON.parse(message.toString());
+    sensorData = {
+      gas_level: data.gas_level ?? sensorData.gas_level,
+      temperature: data.temperature ?? sensorData.temperature,
+    };
+  } catch (error) {
+    console.error('Error parsing message:', error);
+  }
 });
 
 client.on('error', (error) => {
@@ -58,5 +65,5 @@ process.on('SIGINT', () => {
   console.log('Disconnected due to SIGINT');
 });
 
-// Export gasLevel for use in API route
-export { gasLevel };
+// Export a function to get the latest sensor data
+export const getSensorData = () => sensorData;
